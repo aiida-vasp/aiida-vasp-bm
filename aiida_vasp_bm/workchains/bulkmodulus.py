@@ -47,6 +47,7 @@ class BulkModulusWorkChain(WorkChain):
         spec.outline(
             cls.initialize,
             cls.run_relax,
+            cls.create_two_structures,
             cls.run_two_volumes,
             cls.calc_bulk_modulus,
         )
@@ -72,6 +73,14 @@ class BulkModulusWorkChain(WorkChain):
         future = self.submit(builder)
         self.to_context(**{'relax': future})
 
+    def create_two_structures(self):
+        self.report("create_two_structures")
+        for strain, name in zip((0.99, 1.01), ('minus', 'plus')):
+            structure = get_strained_structure(
+                self.ctx['relax'].outputs.structure_relaxed, Float(strain))
+            structure.label = name
+            self.ctx['structure_%s' % name] = structure
+
     def run_two_volumes(self):
         self.report("run_two_volumes")
         for strain, future_name in zip((0.99, 1.01), ('minus', 'plus')):
@@ -86,10 +95,7 @@ class BulkModulusWorkChain(WorkChain):
                 description = self.ctx.inputs.metadata['description']
                 description += " " + future_name
                 builder.metadata['description'] = description
-            structure = get_strained_structure(
-                self.ctx['relax'].outputs.structure_relaxed,
-                Float(strain))
-            builder.structure = structure
+            builder.structure = self.ctx['structure_%s' % future_name]
             builder.force_cutoff = Float(1e-8)
             builder.positions = Bool(True)
             builder.shape = Bool(True)
@@ -105,5 +111,6 @@ class BulkModulusWorkChain(WorkChain):
             self.ctx['plus'].outputs.stress,
             self.ctx['minus'].inputs.structure,
             self.ctx['plus'].inputs.structure)
+        bulk_modulus.label = "Bulk modulus in GPa"
         self.out('bulk_modulus', bulk_modulus)
         self.report('finish bulk modulus calculation')
