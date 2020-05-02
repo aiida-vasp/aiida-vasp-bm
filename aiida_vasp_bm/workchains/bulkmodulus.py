@@ -77,7 +77,7 @@ class BulkModulusWorkChain(WorkChain):
         self.report("create_two_structures")
         for strain, name in zip((0.99, 1.01), ('minus', 'plus')):
             structure = get_strained_structure(
-                self.ctx['relax'].outputs.structure_relaxed, Float(strain))
+                self.ctx['relax'].outputs['relax__structure'], Float(strain))
             structure.label = name
             self.ctx['structure_%s' % name] = structure
 
@@ -96,11 +96,14 @@ class BulkModulusWorkChain(WorkChain):
                 description += " " + future_name
                 builder.metadata['description'] = description
             builder.structure = self.ctx['structure_%s' % future_name]
-            builder.force_cutoff = Float(1e-8)
-            builder.positions = Bool(True)
-            builder.shape = Bool(True)
-            builder.volume = Bool(False)
-            builder.convergence_on = Bool(False)
+            relax = AttributeDict()
+            relax.perform = Bool(True)
+            relax.force_cutoff = Float(1e-8)
+            relax.positions = Bool(True)
+            relax.shape = Bool(True)
+            relax.volume = Bool(False)
+            relax.convergence_on = Bool(False)
+            builder.relax = relax
             future = self.submit(builder)
             self.to_context(**{future_name: future})
 
