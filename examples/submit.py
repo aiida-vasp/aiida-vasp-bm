@@ -1,6 +1,6 @@
 import numpy as np
 from aiida.manage.configuration import load_profile
-from aiida.orm import Bool, Str, Code, Int, Float, WorkChainNode, QueryBuilder, Group
+from aiida.orm import Bool, Str, Code, Int, Float
 from aiida.plugins import DataFactory, WorkflowFactory
 from aiida.engine import submit
 
@@ -54,15 +54,17 @@ def launch_aiida_bulk_modulus(structure, code_string, resources,
     builder.metadata.label = label
     builder.metadata.description = label
     builder.clean_workdir = Bool(False)
-    builder.relax = Bool(True)
-    builder.force_cutoff = Float(1e-8)
-    builder.steps = Int(10)
-    builder.positions = Bool(True)
-    builder.shape = Bool(True)
-    builder.volume = Bool(True)
-    builder.convergence_on = Bool(True)
-    builder.convergence_volume = Float(1e-8)
-    builder.convergence_max_iterations = Int(2)
+    relax = {}
+    relax['perform'] = Bool(True)
+    relax['force_cutoff'] = Float(1e-8)
+    relax['steps'] = Int(10)
+    relax['positions'] = Bool(True)
+    relax['shape'] = Bool(True)
+    relax['volume'] = Bool(True)
+    relax['convergence_on'] = Bool(True)
+    relax['convergence_volume'] = Float(1e-8)
+    relax['convergence_max_iterations'] = Int(2)
+    builder.relax = relax
     builder.verbose = Bool(True)
 
     node = submit(builder)
@@ -112,6 +114,6 @@ def main(code_string, resources):
 
 
 if __name__ == '__main__':
-    code_string = 'vasp544mpi@gpu'
-    resources = {'parallel_env': 'mpi*', 'tot_num_mpiprocs': 12}
+    code_string = 'vasp544mpi@some_computer'
+    resources = {'parallel_env': 'mpi*', 'tot_num_mpiprocs': 24}
     main(code_string, resources)
