@@ -12,7 +12,7 @@ KpointsData = DataFactory("array.kpoints")
 
 def launch_aiida_bulk_modulus(structure, code_string, resources,
                               label="AlN VASP relax calculation"):
-    incar_dict = {
+    incar_dict = {'incar': {
         'PREC': 'Accurate',
         'EDIFF': 1e-8,
         'NELMIN': 5,
@@ -24,7 +24,7 @@ def launch_aiida_bulk_modulus(structure, code_string, resources,
         'GGA': 'PS',
         'LREAL': False,
         'LCHARG': False,
-        'LWAVE': False,
+        'LWAVE': False,}
     }
 
     kpoints = KpointsData()
@@ -114,6 +114,8 @@ def main(code_string, resources):
 
 
 if __name__ == '__main__':
-    code_string = 'vasp544mpi@some_computer'
+    # code_string = 'vasp544mpi@gpu'
+    # resources = {'parallel_env': 'mpi*', 'tot_num_mpiprocs': 12}
+    code_string = 'vasp544mpi@nancy'
     resources = {'parallel_env': 'mpi*', 'tot_num_mpiprocs': 24}
     main(code_string, resources)
