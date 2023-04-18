@@ -1,13 +1,12 @@
 import numpy as np
 from aiida.orm import Bool
 from aiida.plugins import DataFactory, WorkflowFactory
-from aiida.engine import WorkChain, calcfunction
+from aiida.engine import ToContext, WorkChain, calcfunction
 from aiida.common.extendeddicts import AttributeDict
 
 Dict = DataFactory('dict')
 Float = DataFactory('float')
 KpointsData = DataFactory("array.kpoints")
-
 
 @calcfunction
 def get_strained_structure(structure, strain):
@@ -71,19 +70,20 @@ class BulkModulusWorkChain(WorkChain):
             description = self.ctx.inputs.metadata['description'] + " relax"
             builder.metadata['description'] = description
         future = self.submit(builder)
-        self.to_context(**{'relax': future})
+        return ToContext(relax=future)
 
     def create_two_structures(self):
+        assert self.ctx.relax.is_finished_ok
         self.report("create_two_structures")
-        for strain, name in zip((0.99, 1.01), ('minus', 'plus')):
+        for strain, name in zip((0.99, 1.01), ('reduced', 'increased')):
             structure = get_strained_structure(
-                self.ctx['relax'].outputs['relax__structure'], Float(strain))
+                self.ctx.relax.outputs.relax.structure, Float(strain))
             structure.label = name
             self.ctx['structure_%s' % name] = structure
 
     def run_two_volumes(self):
         self.report("run_two_volumes")
-        for strain, future_name in zip((0.99, 1.01), ('minus', 'plus')):
+        for strain, future_name in zip((0.99, 1.01), ('reduced', 'increased')):
             Workflow = WorkflowFactory('vasp.relax')
             builder = Workflow.get_builder()
             for key in self.ctx.inputs:
@@ -108,12 +108,14 @@ class BulkModulusWorkChain(WorkChain):
             self.to_context(**{future_name: future})
 
     def calc_bulk_modulus(self):
+        assert self.ctx.reduced.is_finished_ok
+        assert self.ctx.increased.is_finished_ok
         self.report("calc_bulk_modulus")
         bulk_modulus = calculate_bulk_modulus(
-            self.ctx['minus'].outputs.stress,
-            self.ctx['plus'].outputs.stress,
-            self.ctx['minus'].inputs.structure,
-            self.ctx['plus'].inputs.structure)
+            self.ctx.reduced.outputs.stress,
+            self.ctx.increased.outputs.stress,
+            self.ctx.reduced.inputs.structure,
+            self.ctx.increased.inputs.structure)
         bulk_modulus.label = "Bulk modulus in GPa"
         self.out('bulk_modulus', bulk_modulus)
-        self.report('finish bulk modulus calculation')
+        self.report('finished bulk modulus workflow')

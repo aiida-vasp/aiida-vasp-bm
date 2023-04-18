@@ -10,12 +10,12 @@ Installation
 
 Use the following commands to install the plugin::
 
-    git clone https://github.com/atztogo/aiida-vasp-bm .
+    git clone https://github.com/<yourgithubusername>/aiida-vasp-bm .
     cd aiida-vasp-bm
     pip install -e .  # also installs aiida, if missing (but not postgres)
     #pip install -e .[pre-commit,testing] # install extras for more features
     verdi quicksetup  # better to set up a new profile
-    verdi calculation plugins  # should now show your calclulation plugins
+    verdi plugin list aiida.calculations  # should now show your calculation plugins
 
 Then use ``verdi code setup`` with the ``vasp_bm`` input plugin
 to set up an AiiDA code for aiida-vasp-bm.
@@ -35,3 +35,8 @@ If you have already set up your own aiida_vasp_bm code using
 
     vasp_bm-submit  # uses aiida_vasp_bm.cli
 
+Available calculations
+++++++++++++++++++++++
+
+.. aiida-calcjob:: DiffCalculation
+    :module: aiida_vasp_bm.calculations
